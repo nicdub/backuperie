@@ -56,6 +56,8 @@ namespace backuperie
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern bool FindClose(IntPtr hFindFile);
 
+
+
 		internal static IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 		internal static int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
 		internal const int MAX_PATH = 260;
