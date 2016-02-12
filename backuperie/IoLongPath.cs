@@ -31,6 +31,14 @@ namespace backuperie
 			EFileAttributes dwFlagsAndAttributes,
 			IntPtr hTemplateFile);
 
+		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		internal static extern int ReadFile(
+			SafeFileHandle handle,
+			IntPtr bytes,
+			uint numBytesToRead,
+			out uint numBytesRead_mustBeZero,
+			IntPtr /*NativeOverlapped* */ overlapped);
+
 		//public static Path FindFirstFile(Path path)
 		//{
 		//	WIN32_FIND_DATA lpFindFileData;

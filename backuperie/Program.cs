@@ -10,12 +10,67 @@ namespace backuperie
 		{
 			//var src = args[0];
 			//var dst = args[1];
-			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src";
+			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src\Test.txt";
 			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst";
-			
-				
 
-			Backup(new Path(src), new Path(dst));
+			//using (FileStream fs = new FileStream(new Path(src).GetLongPath, FileMode.Open, FileAccess.Read))
+			//{
+			//	// Read the source file into a byte array.
+			//	byte[] bytes = new byte[fs.Length];
+			//	int numBytesToRead = (int)fs.Length;
+			//	int numBytesRead = 0;
+			//	while (numBytesToRead > 0)
+			//	{
+			//		// Read may return anything from 0 to numBytesToRead.
+			//		int n = fs.Read(bytes, numBytesRead, numBytesToRead);
+
+			//		// Break when the end of the file is reached.
+			//		if (n == 0)
+			//			break;
+
+			//		numBytesRead += n;
+			//		numBytesToRead -= n;
+			//	}
+			//	numBytesToRead = bytes.Length;
+			//	Console.WriteLine(bytes);
+			//}
+
+			var safe = IoLongPath.CreateFile(
+				new Path(src).GetLongPath,
+				IoLongPath.EFileAccess.GenericRead,
+				IoLongPath.EFileShare.Read, IntPtr.Zero,
+				IoLongPath.ECreationDisposition.OpenExisting,
+				0,
+				IntPtr.Zero);
+
+			using (FileStream fs = new FileStream(safe, FileAccess.Read))
+			{
+				StreamReader sr = new StreamReader(fs);
+				Console.WriteLine(sr.ReadToEnd());
+
+				//// Read the source file into a byte array.
+				//byte[] bytes = new byte[fs.Length];
+				//int numBytesToRead = (int)fs.Length;
+				//int numBytesRead = 0;
+				//while (numBytesToRead > 0)
+				//{
+				//	// Read may return anything from 0 to numBytesToRead.
+				//	int n = fs.Read(bytes, numBytesRead, numBytesToRead);
+
+				//	// Break when the end of the file is reached.
+				//	if (n == 0)
+				//		break;
+
+				//	numBytesRead += n;
+				//	numBytesToRead -= n;
+				//}
+				//numBytesToRead = bytes.Length;
+				//Console.WriteLine(bytes);
+			}
+
+			//IoLongPath.FindClose(ptr);
+
+			//Backup(new Path(src), new Path(dst));
 
 		}
 
