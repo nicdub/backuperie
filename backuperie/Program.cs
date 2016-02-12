@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace backuperie
 {
@@ -10,68 +11,82 @@ namespace backuperie
 		{
 			//var src = args[0];
 			//var dst = args[1];
-			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src\Test.txt";
-			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst";
+			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src\Test.7z";
+			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst\Test.7z";
 
-			//using (FileStream fs = new FileStream(new Path(src).GetLongPath, FileMode.Open, FileAccess.Read))
+
+			//var safe = IoLongPath.CreateFile(
+			//	new Path(src).GetLongPath,
+			//	IoLongPath.EFileAccess.GenericRead,
+			//	IoLongPath.EFileShare.Read, IntPtr.Zero,
+			//	IoLongPath.ECreationDisposition.OpenExisting,
+			//	0,
+			//	IntPtr.Zero);
+
+			//using (FileStream fs = new FileStream(safe, FileAccess.Read))
 			//{
-			//	// Read the source file into a byte array.
-			//	byte[] bytes = new byte[fs.Length];
-			//	int numBytesToRead = (int)fs.Length;
-			//	int numBytesRead = 0;
-			//	while (numBytesToRead > 0)
-			//	{
-			//		// Read may return anything from 0 to numBytesToRead.
-			//		int n = fs.Read(bytes, numBytesRead, numBytesToRead);
+			//	StreamReader sr = new StreamReader(fs);
+			//	Console.WriteLine(sr.ReadToEnd());
 
-			//		// Break when the end of the file is reached.
-			//		if (n == 0)
-			//			break;
-
-			//		numBytesRead += n;
-			//		numBytesToRead -= n;
-			//	}
-			//	numBytesToRead = bytes.Length;
-			//	Console.WriteLine(bytes);
 			//}
-
-			var safe = IoLongPath.CreateFile(
-				new Path(src).GetLongPath,
-				IoLongPath.EFileAccess.GenericRead,
-				IoLongPath.EFileShare.Read, IntPtr.Zero,
-				IoLongPath.ECreationDisposition.OpenExisting,
-				0,
-				IntPtr.Zero);
-
-			using (FileStream fs = new FileStream(safe, FileAccess.Read))
-			{
-				StreamReader sr = new StreamReader(fs);
-				Console.WriteLine(sr.ReadToEnd());
-
-				//// Read the source file into a byte array.
-				//byte[] bytes = new byte[fs.Length];
-				//int numBytesToRead = (int)fs.Length;
-				//int numBytesRead = 0;
-				//while (numBytesToRead > 0)
-				//{
-				//	// Read may return anything from 0 to numBytesToRead.
-				//	int n = fs.Read(bytes, numBytesRead, numBytesToRead);
-
-				//	// Break when the end of the file is reached.
-				//	if (n == 0)
-				//		break;
-
-				//	numBytesRead += n;
-				//	numBytesToRead -= n;
-				//}
-				//numBytesToRead = bytes.Length;
-				//Console.WriteLine(bytes);
-			}
 
 			//IoLongPath.FindClose(ptr);
 
 			//Backup(new Path(src), new Path(dst));
 
+			CopyFile(new Path(src), new Path(dst));
+
+		}
+
+		private static void CopyFile(Path src, Path dst)
+		{
+			var fhSrc = IoLongPath.CreateFile(
+				src.GetLongPath,
+				IoLongPath.EFileAccess.GenericRead,
+				IoLongPath.EFileShare.Read,
+				IntPtr.Zero,
+				IoLongPath.ECreationDisposition.OpenExisting,
+				0,
+				IntPtr.Zero);
+
+			// Check for errors
+			var lastWin32Error = Marshal.GetLastWin32Error();
+			if (fhSrc.IsInvalid)
+			{
+				throw new System.ComponentModel.Win32Exception(lastWin32Error);
+			}
+
+			using (var fsSrc = new FileStream(fhSrc, FileAccess.Read))
+			{
+
+				var fhDst = IoLongPath.CreateFile(
+					dst.GetLongPath,
+					IoLongPath.EFileAccess.GenericWrite,
+					IoLongPath.EFileShare.None,
+					IntPtr.Zero,
+					IoLongPath.ECreationDisposition.CreateAlways,
+					0,
+					IntPtr.Zero);
+
+				// Check for errors
+				lastWin32Error = Marshal.GetLastWin32Error();
+				if (fhDst.IsInvalid)
+				{
+					throw new System.ComponentModel.Win32Exception(lastWin32Error);
+				}
+
+				using (var fsDst = new FileStream(fhDst, FileAccess.Write))
+				{
+					byte[] b = new byte[1024];
+					int n;
+					while ((n = fsSrc.Read(b, 0, b.Length)) > 0)
+					{
+						fsDst.Write(b, 0, n);
+					}
+				}
+
+
+			}
 		}
 
 		private static void Backup(Path src, Path dst)
