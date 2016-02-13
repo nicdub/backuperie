@@ -18,7 +18,7 @@ namespace backuperie
 			}
 		}
 
-		public string GetLongPath => LongPathPrefix + _path;
+		public string LongPath => LongPathPrefix + _path;
 
 		public string GetFilename => System.IO.Path.GetFileName(_path);
 	}

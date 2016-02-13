@@ -13,8 +13,8 @@ namespace backuperie
 		{
 			//var src = args[0];
 			//var dst = args[1];
-			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src\Test.7z";
-			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst\Test.zip";
+			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src\web";
+			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst\web";
 
 
 			//var safe = IoLongPath.CreateFile(
@@ -34,10 +34,10 @@ namespace backuperie
 
 			//IoLongPath.FindClose(ptr);
 
-			//Backup(new Path(src), new Path(dst));
+			Backup(new Path(src), new Path(dst));
 
 			//CopyFile(new Path(src), new Path(dst));
-			ZipFile(new Path(src), new Path(dst));
+			//ZipFile(new Path(src), new Path(dst));
 
 		}
 
@@ -45,7 +45,7 @@ namespace backuperie
 		private static void ZipFile(Path src, Path dst)
 		{
 			var fhSrc = IoLongPath.CreateFile(
-				src.GetLongPath,
+				src.LongPath,
 				IoLongPath.EFileAccess.GenericRead,
 				IoLongPath.EFileShare.Read,
 				IntPtr.Zero,
@@ -65,7 +65,7 @@ namespace backuperie
 
 				// Create destination zip file
 				var fhDst = IoLongPath.CreateFile(
-					dst.GetLongPath,
+					dst.LongPath,
 					IoLongPath.EFileAccess.GenericWrite,
 					IoLongPath.EFileShare.None,
 					IntPtr.Zero,
@@ -112,7 +112,7 @@ namespace backuperie
 		private static void CopyFile(Path src, Path dst)
 		{
 			var fhSrc = IoLongPath.CreateFile(
-				src.GetLongPath,
+				src.LongPath,
 				IoLongPath.EFileAccess.GenericRead,
 				IoLongPath.EFileShare.Read,
 				IntPtr.Zero,
@@ -131,7 +131,7 @@ namespace backuperie
 			{
 
 				var fhDst = IoLongPath.CreateFile(
-					dst.GetLongPath,
+					dst.LongPath,
 					IoLongPath.EFileAccess.GenericWrite,
 					IoLongPath.EFileShare.None,
 					IntPtr.Zero,
@@ -160,14 +160,42 @@ namespace backuperie
 			}
 		}
 
+
+		/// <summary>
+		/// Check if the specified directory exists.
+		/// </summary>
+		/// <param name="directory">Path of directory to check.  Must begin with \\?\ for local paths or \\?\UNC\ for network paths.</param>
+		/// <returns></returns>
+		public static bool Exists(Path dir)
+		{
+			FileAttributes fa = IoLongPath.GetFileAttributes(dir.LongPath);
+			if ((int)fa == -1)
+			{
+				return false;
+			}
+			return fa.HasFlag(FileAttributes.Directory);
+		}
+
+
 		private static void Backup(Path src, Path dst)
 		{
-			Console.WriteLine("Current dir: " + src.GetLongPath);
+			Console.WriteLine("Current dir: " + src.LongPath);
+
+			// If dst folder does not exist
+			if (!Exists(dst))
+			{
+				bool result = IoLongPath.CreateDirectory(dst.LongPath, IntPtr.Zero);
+				int lastWin32Error = Marshal.GetLastWin32Error();
+				if (!result)
+				{
+					throw new System.ComponentModel.Win32Exception(lastWin32Error);
+				}
+			}
 
 			var directories = new List<string>();
 
 			IoLongPath.WIN32_FIND_DATA lpFindFileData;
-			var ptr = IoLongPath.FindFirstFile(src.GetLongPath + @"\*", out lpFindFileData);
+			var ptr = IoLongPath.FindFirstFile(src.LongPath + @"\*", out lpFindFileData);
 			do
 			{
 				var filename = lpFindFileData.cFileName;
@@ -176,6 +204,14 @@ namespace backuperie
 				if (filename == "." || filename == "..") continue;
 
 				Console.WriteLine(filename);
+
+				// If file
+				if ((lpFindFileData.dwFileAttributes & FileAttributes.Directory) == 0)
+				{
+					ZipFile(
+						new Path(src.LongPath + @"\" + filename),
+						new Path(dst.LongPath + @"\" + filename + ".zip"));
+				}
 
 				// If directory
 				if ((lpFindFileData.dwFileAttributes & FileAttributes.Directory) != 0)
@@ -188,7 +224,7 @@ namespace backuperie
 
 			foreach (var directory in directories)
 			{
-				Backup(new Path(src.GetLongPath + "\\" + directory), dst);
+				Backup(new Path(src.LongPath + "\\" + directory), new Path(dst.LongPath + "\\" + directory));
 			}
 		}
 	}

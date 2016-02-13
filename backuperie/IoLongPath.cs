@@ -12,10 +12,10 @@ namespace backuperie
 	static class IoLongPath
 	{
 
-		public static bool DeleteFile(Path path)
-		{
-			return DeleteFile(path.GetLongPath);
-		}
+		//public static bool DeleteFile(Path path)
+		//{
+		//	return DeleteFile(path.GetLongPath);
+		//}
 
 		[DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -64,6 +64,16 @@ namespace backuperie
 		[return: MarshalAs(UnmanagedType.Bool)]
 		internal static extern bool FindClose(IntPtr hFindFile);
 
+		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		internal static extern bool CreateDirectory(string lpPathName, IntPtr lpSecurityAttributes);
+
+		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		internal static extern bool RemoveDirectory(string lpPathName);
+
+		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+		internal static extern FileAttributes GetFileAttributes(string lpFileName);
 
 
 		internal static IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
