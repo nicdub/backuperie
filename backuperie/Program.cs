@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace backuperie
 {
@@ -12,7 +14,7 @@ namespace backuperie
 			//var src = args[0];
 			//var dst = args[1];
 			var src = @"\\?\C:\Users\NicDub\Desktop\backuperie\src\Test.7z";
-			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst\Test.7z";
+			var dst = @"\\?\C:\Users\NicDub\Desktop\backuperie\dst\Test.zip";
 
 
 			//var safe = IoLongPath.CreateFile(
@@ -34,9 +36,78 @@ namespace backuperie
 
 			//Backup(new Path(src), new Path(dst));
 
-			CopyFile(new Path(src), new Path(dst));
+			//CopyFile(new Path(src), new Path(dst));
+			ZipFile(new Path(src), new Path(dst));
 
 		}
+
+
+		private static void ZipFile(Path src, Path dst)
+		{
+			var fhSrc = IoLongPath.CreateFile(
+				src.GetLongPath,
+				IoLongPath.EFileAccess.GenericRead,
+				IoLongPath.EFileShare.Read,
+				IntPtr.Zero,
+				IoLongPath.ECreationDisposition.OpenExisting,
+				0,
+				IntPtr.Zero);
+
+			// Check for errors
+			var lastWin32Error = Marshal.GetLastWin32Error();
+			if (fhSrc.IsInvalid)
+			{
+				throw new System.ComponentModel.Win32Exception(lastWin32Error);
+			}
+
+			using (var fsSrc = new FileStream(fhSrc, FileAccess.Read))
+			{
+
+				// Create destination zip file
+				var fhDst = IoLongPath.CreateFile(
+					dst.GetLongPath,
+					IoLongPath.EFileAccess.GenericWrite,
+					IoLongPath.EFileShare.None,
+					IntPtr.Zero,
+					IoLongPath.ECreationDisposition.CreateAlways,
+					0,
+					IntPtr.Zero);
+
+				// Check for errors
+				lastWin32Error = Marshal.GetLastWin32Error();
+				if (fhDst.IsInvalid)
+				{
+					throw new System.ComponentModel.Win32Exception(lastWin32Error);
+				}
+
+				using (var fsDst = new FileStream(fhDst, FileAccess.Write))
+				{
+					using (var archive = new ZipArchive(fsDst, ZipArchiveMode.Create))
+					{
+						var readmeEntry = archive.CreateEntry(src.GetFilename);
+						//using (var writer = new StreamWriter(readmeEntry.Open()))
+						using (var writer = new BinaryWriter(readmeEntry.Open()))
+						{
+							byte[] b = new byte[1024];
+							int n;
+							while ((n = fsSrc.Read(b, 0, b.Length)) > 0)
+							{
+								writer.Write(b, 0, n);
+							}
+						}
+					}
+					//byte[] b = new byte[1024];
+					//int n;
+					//while ((n = fsSrc.Read(b, 0, b.Length)) > 0)
+					//{
+					//	fsDst.Write(b, 0, n);
+					//}
+				}
+
+
+			}
+		}
+
 
 		private static void CopyFile(Path src, Path dst)
 		{
@@ -77,7 +148,7 @@ namespace backuperie
 
 				using (var fsDst = new FileStream(fhDst, FileAccess.Write))
 				{
-					byte[] b = new byte[1024];
+					var b = new byte[1024];
 					int n;
 					while ((n = fsSrc.Read(b, 0, b.Length)) > 0)
 					{
